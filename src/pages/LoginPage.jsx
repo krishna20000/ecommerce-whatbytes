@@ -11,6 +11,43 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Password validation rules
+  const validatePassword = (password) => {
+    const errors = {};
+    
+    if (password.length < 8) {
+      errors.length = 'Password must be at least 8 characters long';
+    }
+    
+    if (!/[A-Z]/.test(password)) {
+      errors.uppercase = 'Password must contain at least one uppercase letter';
+    }
+    
+    if (!/[a-z]/.test(password)) {
+      errors.lowercase = 'Password must contain at least one lowercase letter';
+    }
+    
+    if (!/\d/.test(password)) {
+      errors.number = 'Password must contain at least one number';
+    }
+    
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      errors.special = 'Password must contain at least one special character (!@#$%^&*(),.?":{}|<>)';
+    }
+    
+    return errors;
+  };
+
+  // Email validation
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return 'Please enter a valid email address';
+    }
+    return null;
+  };
   
   const { login, signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -21,9 +58,28 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setValidationErrors({});
     setLoading(true);
 
     try {
+      // Validate email
+      const emailError = validateEmail(email);
+      if (emailError) {
+        setError(emailError);
+        setLoading(false);
+        return;
+      }
+
+      // Validate password for signup
+      if (isSignUp) {
+        const passwordErrors = validatePassword(password);
+        if (Object.keys(passwordErrors).length > 0) {
+          setValidationErrors(passwordErrors);
+          setLoading(false);
+          return;
+        }
+      }
+
       if (isSignUp) {
         await signup(email, password);
       } else {
@@ -31,7 +87,24 @@ export default function LoginPage() {
       }
       navigate(from, { replace: true });
     } catch (error) {
-      setError(error.message);
+      // Handle Firebase auth errors
+      let errorMessage = error.message;
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists. Please try logging in instead.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please use a stronger password.';
+      } else if (error.code === 'auth/user-not-found') {
+        errorMessage = 'No account found with this email. Please check your email or sign up.';
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed attempts. Please try again later.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -44,6 +117,28 @@ export default function LoginPage() {
     } catch (error) {
       setError(error.message);
     }
+  };
+
+  // Real-time password validation for signup
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    
+    if (isSignUp && newPassword.length > 0) {
+      const errors = validatePassword(newPassword);
+      setValidationErrors(errors);
+    } else {
+      setValidationErrors({});
+    }
+  };
+
+  // Check if password meets all requirements
+  const getPasswordStrength = () => {
+    if (!password) return 0;
+    const errors = validatePassword(password);
+    const totalChecks = 5;
+    const passedChecks = totalChecks - Object.keys(errors).length;
+    return (passedChecks / totalChecks) * 100;
   };
 
   return (
@@ -102,17 +197,19 @@ export default function LoginPage() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
                 </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none relative block w-full pl-10 pr-10 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#0E5ACD] focus:border-[#0E5ACD] focus:z-10 sm:text-sm"
-                  placeholder="Enter your password"
-                />
+                                 <input
+                   id="password"
+                   name="password"
+                   type={showPassword ? 'text' : 'password'}
+                   autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                   required
+                   value={password}
+                   onChange={handlePasswordChange}
+                   className={`appearance-none relative block w-full pl-10 pr-10 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#0E5ACD] focus:border-[#0E5ACD] focus:z-10 sm:text-sm ${
+                     Object.keys(validationErrors).length > 0 && isSignUp ? 'border-red-300' : 'border-gray-300'
+                   }`}
+                   placeholder="Enter your password"
+                 />
                 <button
                   type="button"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
@@ -122,11 +219,69 @@ export default function LoginPage() {
                     <EyeOff className="h-5 w-5 text-gray-400" />
                   ) : (
                     <Eye className="h-5 w-5 text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
+                                     )}
+                 </button>
+               </div>
+             </div>
+             
+             {/* Password validation feedback for signup */}
+             {isSignUp && password && (
+               <div className="space-y-2">
+                 {/* Password strength indicator */}
+                 <div className="flex items-center gap-2">
+                   <div className="flex-1 bg-gray-200 rounded-full h-2">
+                     <div 
+                       className={`h-2 rounded-full transition-all duration-300 ${
+                         getPasswordStrength() >= 80 ? 'bg-green-500' :
+                         getPasswordStrength() >= 60 ? 'bg-yellow-500' :
+                         getPasswordStrength() >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                       }`}
+                       style={{ width: `${getPasswordStrength()}%` }}
+                     ></div>
+                   </div>
+                   <span className="text-xs text-gray-500">
+                     {getPasswordStrength()}% strong
+                   </span>
+                 </div>
+                 
+                 {/* Validation requirements */}
+                 <div className="text-xs space-y-1">
+                   <div className={`flex items-center gap-1 ${password.length >= 8 ? 'text-green-600' : 'text-gray-500'}`}>
+                     <span>{password.length >= 8 ? '✓' : '○'}</span>
+                     <span>At least 8 characters</span>
+                   </div>
+                   <div className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-500'}`}>
+                     <span>{/[A-Z]/.test(password) ? '✓' : '○'}</span>
+                     <span>One uppercase letter</span>
+                   </div>
+                   <div className={`flex items-center gap-1 ${/[a-z]/.test(password) ? 'text-green-600' : 'text-gray-500'}`}>
+                     <span>{/[a-z]/.test(password) ? '✓' : '○'}</span>
+                     <span>One lowercase letter</span>
+                   </div>
+                   <div className={`flex items-center gap-1 ${/\d/.test(password) ? 'text-green-600' : 'text-gray-500'}`}>
+                     <span>{/\d/.test(password) ? '✓' : '○'}</span>
+                     <span>One number</span>
+                   </div>
+                   <div className={`flex items-center gap-1 ${/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-600' : 'text-gray-500'}`}>
+                     <span>{/[!@#$%^&*(),.?":{}|<>]/.test(password) ? '✓' : '○'}</span>
+                     <span>One special character</span>
+                   </div>
+                 </div>
+                 
+                 {/* Validation errors */}
+                 {Object.keys(validationErrors).length > 0 && (
+                   <div className="text-red-600 text-xs space-y-1">
+                     {Object.values(validationErrors).map((error, index) => (
+                       <div key={index} className="flex items-center gap-1">
+                         <span>⚠</span>
+                         <span>{error}</span>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+               </div>
+             )}
+           </div>
 
           <div>
             <button
