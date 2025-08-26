@@ -9,6 +9,7 @@ import {
   signInWithPopup
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import { testFirestoreConnection } from '../utils/firestoreTest';
 
 const AuthContext = createContext();
 
@@ -45,6 +46,11 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setLoading(false);
+      
+      // Test Firestore connection when user logs in
+      if (user) {
+        testFirestoreConnection(user.uid);
+      }
     });
 
     return unsubscribe;
