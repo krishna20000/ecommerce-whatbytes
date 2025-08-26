@@ -16,6 +16,7 @@ This is a responsive e-commerce product listing page built as a frontend assignm
       - View all items in the cart.
       - Cart state is saved in `localStorage` to persist between sessions.
   - **Responsive Design**: The UI is fully responsive and optimized for desktop, tablet, and mobile devices.
+  - Authentication: Integrated Firebase Authentication to provide a secure and robust Google Sign-in experience.
 
 ## Tech Stack
 
