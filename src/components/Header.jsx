@@ -1,10 +1,12 @@
 // src/components/Header.jsx
-import { Search, ShoppingCart } from 'lucide-react';
+import { Search, ShoppingCart, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
   const { state } = useCart();
+  const { currentUser, logout } = useAuth();
   const cartItemCount = state.items.reduce((total, item) => total + item.quantity, 0);
 
   return (
@@ -25,7 +27,7 @@ export default function Header() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/80" size={20} />
         </div>
         {/* Cart button with count badge on the left and label */}
-        <div className="relative flex items-center">
+        <div className="relative flex items-center gap-3">
           {cartItemCount > 0 && (
             <span className="absolute -left-3 top-1/2 -translate-y-1/2 bg-white text-brand-blue text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center shadow">
               {cartItemCount}
@@ -39,6 +41,17 @@ export default function Header() {
             <ShoppingCart size={20} />
             <span className="text-sm font-medium">Cart</span>
           </Link>
+          
+          {currentUser && (
+            <button
+              onClick={logout}
+              className="pl-3 pr-3 py-2 bg-red-600 text-white rounded-md transition-opacity hover:opacity-80 flex items-center gap-2"
+              aria-label="Logout"
+            >
+              <LogOut size={18} />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          )}
         </div>
       </div>
     </header>

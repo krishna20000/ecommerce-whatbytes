@@ -7,7 +7,7 @@ import { products } from '../data/products.js';
 export default function HomePage() {
   const [category, setCategory] = useState('All');
   const [price, setPrice] = useState(1000);
-  const { dispatch } = useCart();
+  const { addItemToCart } = useCart();
 
   const filteredProducts = products.filter(product => {
     const categoryMatch = category === 'All' || product.category === category;
@@ -20,7 +20,7 @@ export default function HomePage() {
   const isFeaturedVisible = featuredProduct && (category === 'All' || featuredProduct.category === category) && featuredProduct.price <= price;
   const handleAddFeatured = () => {
     if (featuredProduct) {
-      dispatch({ type: 'ADD_ITEM', payload: featuredProduct });
+      addItemToCart(featuredProduct);
     }
   };
 

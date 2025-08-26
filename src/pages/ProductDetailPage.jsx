@@ -6,14 +6,14 @@ import { useCart } from '../context/CartContext.jsx';
 export default function ProductDetailPage() {
   const { id } = useParams();
   const product = products.find(p => p.id === parseInt(id));
-  const { dispatch } = useCart();
+  const { addItemToCart } = useCart();
 
   if (!product) {
     return <div className="text-center text-xl text-gray-600 py-20">Product not found</div>;
   }
   
   const handleAddToCart = () => {
-    dispatch({ type: 'ADD_ITEM', payload: product });
+    addItemToCart(product);
   };
 
   return (

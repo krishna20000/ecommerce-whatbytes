@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 export default function ProductCard({ product }) {
-  const { dispatch } = useCart();
+  const { addItemToCart } = useCart();
 
   const handleAddToCart = () => {
-    dispatch({ type: 'ADD_ITEM', payload: product });
+    addItemToCart(product);
   };
 
   return (

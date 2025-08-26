@@ -1,4 +1,6 @@
 import React, { createContext, useReducer, useContext, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const cartReducer = (state, action) => {
   switch (action.type) {
@@ -41,8 +43,17 @@ const cartReducer = (state, action) => {
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
-  // ... the rest of the file is the same
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
+
+  const addItemToCart = (product) => {
+    if (!currentUser) {
+      navigate('/login', { state: { from: { pathname: window.location.pathname } } });
+      return;
+    }
+    dispatch({ type: 'ADD_ITEM', payload: product });
+  };
 
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
@@ -61,7 +72,7 @@ export const CartProvider = ({ children }) => {
     }
   }, [state.items]);
 
-  return <CartContext.Provider value={{ state, dispatch }}>{children}</CartContext.Provider>;
+  return <CartContext.Provider value={{ state, dispatch, addItemToCart }}>{children}</CartContext.Provider>;
 };
 
 export const useCart = () => {
