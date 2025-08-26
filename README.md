@@ -1,7 +1,3 @@
-Of course. Here is a professional and complete README file for your project.
-
------
-
 # Whatbytes E-commerce Frontend
 
 This is a responsive e-commerce product listing page built as a frontend assignment. The application allows users to view, filter, and search for products, view product details, and manage a shopping cart.
